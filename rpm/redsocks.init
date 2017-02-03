@@ -1,0 +1,108 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          redsocks
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: redsocks TCP connection-to-SOCKS redirector
+# Description:       <Enter a long description of the software>
+#                    <...>
+#                    <...>
+### END INIT INFO
+
+# Author: Apollon Oikonomopoulos <apoikos@gmail.com>
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC=redsocks             # Introduce a short description here
+NAME=redsocks             # Introduce the short server's name here
+DAEMON=/usr/sbin/redsocks # Introduce the server's location here
+DAEMON_ARGS=""             # Arguments to run the daemon with
+PIDFILE=/var/run/$NAME/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x $DAEMON ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+[ "$START" = "yes" ] || exit 0
+
+# Load the VERBOSE setting and other rcS variables
+#. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# Take care of pidfile permissions
+	USER=$(egrep '\buser\s*=' $CONFFILE | sed -r 's/.*\buser\s+=\s*(.*);/\1/')
+	mkdir /var/run/$NAME 2>/dev/null || true
+	chown "$USER" /var/run/$NAME
+
+	start_daemon -u $USER $DAEMON -p $PIDFILE -c /etc/redsocks.conf > /dev/null
+        RETVAL=$?
+	return "$RETVAL"
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+        killproc -p $PIDFILE
+        RETVAL=$?
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -f $PIDFILE
+	return "$RETVAL"
+}
+
+
+case "$1" in
+  start)
+    do_start
+    case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_success_msg "Starting $DESC ";;
+		2) [ "$VERBOSE" != no ] && log_success_msg "Starting $DESC " ;;
+	esac
+  ;;
+  stop)
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_success_msg "Stopping $DESC " ;;
+		2) [ "$VERBOSE" != no ] && log_failure_msg "Stopping $DESC " ;;
+	esac
+	;;
+  status)
+       pidofproc "$NAME" && log_success_msg "$DESC is runnint"; exit 0 || exit $?
+       ;;
+  restart|force-reload)
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_success_msg "Restarting $DESC " ;;
+			*) log_failure_msg "Restarting $DESC " ;;
+		esac
+		;;
+	  *)
+	  	# Failed to stop
+	        log_failure_msg "Failed to stop $DESC "
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:

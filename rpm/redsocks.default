@@ -1,0 +1,5 @@
+# Enable during startup?
+START=yes
+
+# Configuration file
+CONFFILE="/etc/redsocks.conf"
