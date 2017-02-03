@@ -86,7 +86,7 @@ Packages
  * Gentoo (theebuilds overlay): http://code.google.com/p/theebuilds/source/browse/trunk/net-misc/redsocks
  * Gentoo (zugaina overlay): http://gpo.zugaina.org/net-proxy/redsocks
  * Ubuntu: http://packages.ubuntu.com/search?searchon=names&keywords=redsocks
-
+ * RPM: https://github.com/sverkera/redsocks
 
 Compilation
 ===========
