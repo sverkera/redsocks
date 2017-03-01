@@ -22,6 +22,15 @@ DAEMON_ARGS=""             # Arguments to run the daemon with
 PIDFILE=/var/run/$NAME/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
+# Source function library.
+if [ -f /etc/init.d/functions ] ; then
+  . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ] ; then
+  . /etc/rc.d/init.d/functions
+else
+  exit 1
+fi
+
 # Exit if the package is not installed
 [ -x $DAEMON ] || exit 0
 
@@ -29,13 +38,6 @@ SCRIPTNAME=/etc/init.d/$NAME
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 [ "$START" = "yes" ] || exit 0
-
-# Load the VERBOSE setting and other rcS variables
-#. /lib/init/vars.sh
-
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
-. /lib/lsb/init-functions
 
 #
 # Function that starts the daemon/service
@@ -47,8 +49,10 @@ do_start()
 	mkdir /var/run/$NAME 2>/dev/null || true
 	chown "$USER" /var/run/$NAME
 
-	start_daemon -u $USER $DAEMON -p $PIDFILE -c /etc/redsocks.conf > /dev/null
+	echo -n $"Starting redsocks service: "
+	daemon --user $USER $DAEMON -p $PIDFILE -c /etc/redsocks.conf > /dev/null
         RETVAL=$?
+	echo
 	return "$RETVAL"
 }
 
@@ -57,8 +61,10 @@ do_start()
 #
 do_stop()
 {
-        killproc -p $PIDFILE
+        echo -n $"Shutting down redsocks service: "
+        killproc $NAME
         RETVAL=$?
+	echo
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"
@@ -68,34 +74,23 @@ do_stop()
 case "$1" in
   start)
     do_start
-    case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_success_msg "Starting $DESC ";;
-		2) [ "$VERBOSE" != no ] && log_success_msg "Starting $DESC " ;;
-	esac
   ;;
   stop)
 	do_stop
-	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_success_msg "Stopping $DESC " ;;
-		2) [ "$VERBOSE" != no ] && log_failure_msg "Stopping $DESC " ;;
-	esac
 	;;
   status)
-       pidofproc "$NAME" && log_success_msg "$DESC is runnint"; exit 0 || exit $?
+       status $NAME
+       exit $?
        ;;
   restart|force-reload)
 	do_stop
 	case "$?" in
 	  0|1)
 		do_start
-		case "$?" in
-			0) log_success_msg "Restarting $DESC " ;;
-			*) log_failure_msg "Restarting $DESC " ;;
-		esac
 		;;
 	  *)
 	  	# Failed to stop
-	        log_failure_msg "Failed to stop $DESC "
+	        echo $"Failed to stop $DESC "
 		;;
 	esac
 	;;
